@@ -21,6 +21,7 @@ locals {
   hcp_audience = "aws.workload.identity" # Default audience in HCP Terraform for AWS.
 }
 
+# retrieve the SHA1 fingerprint of the TLS certificate protecting https://app.terraform.io.
 data "tls_certificate" "provider" {
   url = local.hcp_terraform_url
 }
@@ -37,6 +38,7 @@ resource "aws_iam_openid_connect_provider" "hcp_terraform" {
   ]
 }
 
+# IAM policy that allows HCP Terraform to assume the IAM role at runtime.
 data "aws_iam_policy_document" "example_oidc_assume_role_policy" {
   statement {
     effect = "Allow"
@@ -63,6 +65,7 @@ data "aws_iam_policy_document" "example_oidc_assume_role_policy" {
   }
 }
 
+# IAM role that can be assumed by HCP Terraform at runtime.
 resource "aws_iam_role" "example" {
   name               = "example"
   assume_role_policy = data.aws_iam_policy_document.example_oidc_assume_role_policy.json
