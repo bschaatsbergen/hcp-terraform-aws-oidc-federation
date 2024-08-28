@@ -71,3 +71,33 @@ resource "aws_iam_role" "example" {
   assume_role_policy = data.aws_iam_policy_document.example_oidc_assume_role_policy.json
 }
 
+# this variable set will be shared with another HCP Terraform Workspace, so it can assume the IAM role at runtime.
+resource "tfe_variable_set" "example" {
+  name         = aws_iam_role.example.name
+  description  = "OIDC federation configuration for ${aws_iam_role.example.arn}"
+  organization = "ORG_NAME"
+}
+
+# this instructs HCP Terraform to use dynamic provider credentials for the AWS provider.
+resource "tfe_variable" "tfc_aws_provider_auth" {
+  key             = "TFC_AWS_PROVIDER_AUTH"
+  value           = "true"
+  category        = "env"
+  variable_set_id = tfe_variable_set.example.id
+}
+
+# this variable will be used by the HCP Terraform Workspace to assume the IAM role at runtime.
+resource "tfe_variable" "tfc_example_role_arn" {
+  sensitive       = true
+  key             = "TFC_AWS_RUN_ROLE_ARN"
+  value           = aws_iam_role.example.arn
+  category        = "env"
+  variable_set_id = tfe_variable_set.example.id
+}
+
+# share the variable set with another HCP Terraform Workspace
+resource "tfe_workspace_variable_set" "example" {
+  variable_set_id = tfe_variable_set.example.id
+  workspace_id    = "ws-XXXXXXXXXXXXXXX"
+}
+
